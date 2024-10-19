@@ -1,4 +1,4 @@
-from image_processor import ImageProcessor
+from src import ImageProcessor
 
 class Controller:
     def __init__(self, view):
