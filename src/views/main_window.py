@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QFrame, QGraphicsDropShadowEffect)
 from PyQt5.QtCore import pyqtSignal, Qt, QPropertyAnimation, QEasingCurve
 from PyQt5.QtGui import QFont, QColor
+import os
+from datetime import datetime
 
 class ModernButton(QPushButton):
     def __init__(self, text, parent=None):
@@ -121,31 +123,49 @@ class MainWindow(QMainWindow):
         self.input_path = ""
         self.output_path = ""
 
+    def truncate_path(self, path, max_length=45):
+        if len(path) <= max_length:
+            return path
+        return path[:max_length] + "..."
+
     def select_input_file(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Select Input Image", "", "Image Files (*.png *.jpg *.bmp)")
         if file_path:
             self.input_path = file_path
-            self.input_label.setText(f"Input: {file_path}")
+            truncated_path = self.truncate_path(os.path.basename(file_path))
+            self.input_label.setText(f"Input: {truncated_path}")
             self.status_label.setText("Input file selected")
+            self.generate_output_filename(file_path)
+
+    def generate_output_filename(self, input_path):
+        directory = os.path.dirname(input_path)
+        filename, extension = os.path.splitext(os.path.basename(input_path))
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        new_filename = f"{filename}_processed_{timestamp}{extension}"
+        self.output_path = os.path.join(directory, new_filename)
+        truncated_path = self.truncate_path(new_filename)
+        self.output_label.setText(f"Output: {truncated_path}")
 
     def select_output_file(self):
-        file_path, _ = QFileDialog.getSaveFileName(self, "Select Output Location", "", "Image Files (*.png *.jpg *.bmp)")
+        initial_path = self.output_path if self.output_path else ""
+        file_path, _ = QFileDialog.getSaveFileName(self, "Select Output Location", initial_path, "Image Files (*.png *.jpg *.bmp)")
         if file_path:
             self.output_path = file_path
-            self.output_label.setText(f"Output: {file_path}")
+            truncated_path = self.truncate_path(os.path.basename(file_path))
+            self.output_label.setText(f"Output: {truncated_path}")
             self.status_label.setText("Output location selected")
 
     def encrypt_image(self):
         if self.input_path and self.output_path:
             self.encrypt_signal.emit(self.input_path, self.output_path)
-            self.status_label.setText("Encrypting...")
+            self.status_label.setText("Encrypted")
         else:
             self.show_error("Please select both input and output files.")
 
     def decrypt_image(self):
         if self.input_path and self.output_path:
             self.decrypt_signal.emit(self.input_path, self.output_path)
-            self.status_label.setText("Decrypting...")
+            self.status_label.setText("Decrypted")
         else:
             self.show_error("Please select both input and output files.")
 
